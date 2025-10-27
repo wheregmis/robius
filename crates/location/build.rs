@@ -33,20 +33,27 @@ fn main() {
             .join("LocationCallback.class");
 
         let d8_jar_path = android_build::android_d8_jar(None).expect("Failed to find d8.jar");
+        let android_jar_str = android_jar_path.to_string_lossy().to_string();
+        let out_dir_str = out_dir.to_string_lossy().to_string();
 
-        assert!(
-            android_build::JavaRun::new()
-                .class_path(d8_jar_path)
-                .main_class("com.android.tools.r8.D8")
-                .arg("--classpath")
-                .arg(android_jar_path)
-                .arg("--output")
-                .arg(&out_dir)
-                .arg(&class_file)
-                .run()
-                .expect("failed to acquire exit status for java d8.jar invocation")
-                .success(),
-            "java d8.jar invocation failed"
-        );
+        let dex_success = android_build::JavaRun::new()
+            .class_path(d8_jar_path)
+            .main_class("com.android.tools.r8.D8")
+            .args([
+                "--classpath",
+                &android_jar_str,
+                "--classpath",
+                &out_dir_str,
+                "--lib",
+                &android_jar_str,
+                "--output",
+                &out_dir_str,
+            ])
+            .arg(&class_file)
+            .run()
+            .expect("failed to acquire exit status for java d8.jar invocation")
+            .success();
+
+        assert!(dex_success, "java d8.jar invocation failed");
     }
 }
